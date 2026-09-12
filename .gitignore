@@ -170,3 +170,8 @@ test*/
 test*.py
 data/*
 .vscode/
+
+# Local simulator builds and generated notebook/video outputs
+virtualhome/simulation/unity_simulator/Output/
+virtualhome/simulation/unity_simulator/*.app/
+virtualhome/video_normal.mp4
