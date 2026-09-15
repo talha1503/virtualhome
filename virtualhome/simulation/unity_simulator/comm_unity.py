@@ -174,6 +174,48 @@ class UnityCommunication(object):
             })
         return response['success']
 
+    def set_head_gaze(self, char_index=0, target_object_id=None, target_position=None,
+                      weight=1.0, body_weight=0.0, head_weight=1.0, eyes_weight=0.0,
+                      clamp_weight=0.5, blend_speed=6.0, duration=-1.0):
+        """
+        Rotate only the humanoid head/eyes toward an object id or world position.
+
+        This requires a Unity build that exposes the `set_head_gaze` command.
+        """
+        if target_object_id is None and target_position is None:
+            raise ValueError("Either target_object_id or target_position must be provided")
+
+        pos = target_position or [0.0, 1.5, 0.0]
+        gaze_dict = {
+            'char_index': char_index,
+            'use_object_target': target_object_id is not None,
+            'target_object_id': -1 if target_object_id is None else int(target_object_id),
+            'target_position': {'x': pos[0], 'y': pos[1], 'z': pos[2]},
+            'weight': weight,
+            'body_weight': body_weight,
+            'head_weight': head_weight,
+            'eyes_weight': eyes_weight,
+            'clamp_weight': clamp_weight,
+            'blend_speed': blend_speed,
+            'duration': duration,
+        }
+        response = self.post_command(
+            {'id': str(time.time()),
+             'action': 'set_head_gaze',
+             'stringParams': [json.dumps(gaze_dict)]})
+        return response['success'], response['message']
+
+    def clear_head_gaze(self, char_index=0):
+        """
+        Clear the direct humanoid head/eye gaze controller for a character.
+        """
+        gaze_dict = {'char_index': char_index}
+        response = self.post_command(
+            {'id': str(time.time()),
+             'action': 'clear_head_gaze',
+             'stringParams': [json.dumps(gaze_dict)]})
+        return response['success'], response['message']
+
     def check(self, script_lines):
         response = self.post_command({'id': str(time.time()), 'action': 'check_script', 'stringParams': script_lines})
         return response['success'], response['message']
@@ -330,6 +372,19 @@ class UnityCommunication(object):
         response = self.post_command({'id': str(time.time()), 'action': 'camera_data',
                                       'intParams': camera_indexes})
         return response['success'], json.loads(response['message'])
+
+    def renderer_debug(self):
+        """
+        Return runtime renderer/camera diagnostics from Unity.
+
+        This is only available in our social-head-gaze Unity builds.
+        """
+        response = self.post_command({'id': str(time.time()), 'action': 'renderer_debug'})
+        try:
+            msg = json.loads(response['message'])
+        except Exception:
+            msg = response.get('message')
+        return response['success'], msg
 
     def camera_image(self, camera_indexes, mode='normal', image_width=640, image_height=480):
         """
